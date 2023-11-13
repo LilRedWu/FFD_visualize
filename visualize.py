@@ -29,25 +29,40 @@ import kaleido
 
 def pcshow(xs,ys,zs):
     data=[go.Scatter3d(x=xs, y=ys, z=zs,
-                                   mode='markers')]
+                                   mode='markers',marker=dict(size=8))]
     fig = visualize_rotate(data)
     fig.update_traces(marker=dict(size=2,
-                      line=dict(width=2,
-                      color='DarkSlateGrey')),
-                      selector=dict(mode='markers'))
+                        line=dict(width=2,
+                        color='DarkSlateGrey')),
+                        selector=dict(mode='markers'))
+    fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False )
+    fig.update_layout(scene = dict(xaxis = dict(showgrid = False,showticklabels = False),
+                                   yaxis = dict(showgrid = False,showticklabels = False),
+                                   zaxis = dict(showgrid = False,showticklabels = False)
+        )
+        
+        )
     fig.show()
 
 
-def pcwrite(path,xs,ys,zs):
-    data=[go.Scatter3d(x=xs, y=ys, z=zs,
-                                   mode='markers')]
-    fig = visualize_rotate(data)
-    fig.update_traces(marker=dict(size=2,
-                      line=dict(width=2,
-                      color='DarkSlateGrey')),
-                      selector=dict(mode='markers'))
-   
-    fig.write_image(path+'.jpg')
+
+
+def pcwrite(name,xs,ys,zs):
+        data=[go.Scatter3d(x=xs, y=ys, z=zs,
+                                    mode='markers')]
+        fig = visualize_rotate(data)
+        fig.update_traces(marker=dict(size=2,
+                        line=dict(width=2,
+                        color='DarkSlateGrey')),
+                        selector=dict(mode='markers'))
+        fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False )
+        fig.update_layout(scene = dict(xaxis = dict(showgrid = False,showticklabels = False),
+                                   yaxis = dict(showgrid = False,showticklabels = False),
+                                   zaxis = dict(showgrid = False,showticklabels = False)
+        )
+        
+        )
+        fig.write_image(name+'.jpg')
 
 
 
@@ -73,6 +88,51 @@ def pc_show_multi(object_coords,control_point_coords):
     fig.show()
 
 
+# def pc_show_multi_list(object_coords_list):
+#     """
+#     xs,ys,zs the coordinates from ML40 object;
+#     xp,yp,zp  the coordinated from FFD control points 
+#     """
+#     xs,ys,zs = object_coords
+#     xp,yp,zp = control_point_coords
+#     for object in object_coords_list:
+        
+
+    
+#     data = [go.Scatter3d(x=xs, y=ys, z=zs,mode='markers'),
+#             go.Scatter3d(x=xp, y=yp, z=zp, mode='markers'),
+#             go.Scatter3d(x=xp, y=yp, z=zp, mode='markers')]
+#     fig = visualize_rotate(data)
+#     fig.update_traces(marker=dict(size=2,
+#                       line=dict(width=2,
+#                       color='DarkSlateGrey')),
+#                       selector=dict(mode='markers'))
+#     fig.show()
+
+
+
+def pc_show_multi_1(object_coords,control_point_coords,p_color):
+    """
+    xs,ys,zs the coordinates from ML40 object;
+    xp,yp,zp  the coordinated from FFD control points 
+    """
+    xs,ys,zs = object_coords
+    xp,yp,zp = control_point_coords
+
+
+    
+    data = [go.Scatter3d(x=xs, y=ys, z=zs,mode='markers'),go.Scatter3d(x=xp, y=yp, z=zp,
+                                   mode='markers',marker=dict(color=p_color))]
+    fig = visualize_rotate(data)
+    fig.update_traces(marker=dict(size=2,
+                      line=dict(width=2,
+                      color='DarkSlateGrey')),
+                      selector=dict(mode='markers'))
+    fig.show()
+
+
+
+
 def visualize_rotate(data):
     x_eye, y_eye, z_eye = 1.25, 1.25, 0.8
     frames=[]
@@ -87,26 +147,37 @@ def visualize_rotate(data):
 
     
     fig = go.Figure(data=data,
-        layout=go.Layout(
-            updatemenus=[dict(type='buttons',
-                showactive=False,
-                y=1,
-                x=0.8,
-                xanchor='left',
-                yanchor='bottom',
-                pad=dict(t=45, r=10),
-                buttons=[dict(label='Play',
-                    method='animate',
-                    args=[None, dict(frame=dict(duration=50, redraw=True),
-                        transition=dict(duration=0),
-                        fromcurrent=True,
-                        mode='immediate'
-                        )]
-                    )
-                ])]
-        ),
-        frames=frames
+        # layout=go.Layout(
+        #     updatemenus=[dict(type='buttons',
+        #         showactive=False,
+        #         y=1,
+        #         x=0.8,
+        #         xanchor='left',
+        #         yanchor='bottom',
+        #         pad=dict(t=45, r=10),
+        #         buttons=[dict(label='Play',
+        #             method='animate',
+        #             args=[None, dict(frame=dict(duration=50, redraw=True),
+        #                 transition=dict(duration=0),
+        #                 fromcurrent=True,
+        #                 mode='immediate'
+        #                 )]
+        #             )
+        #         ])]
+        # ),
+        # frames=frames
     )
+    fig.update_traces(marker=dict(size=2,
+                        line=dict(width=2,
+                        color='DarkSlateGrey')),
+                        selector=dict(mode='markers'))
+    fig.update_scenes(xaxis_visible=False, yaxis_visible=False,zaxis_visible=False )
+    fig.update_layout(scene = dict(xaxis = dict(showgrid = False,showticklabels = False),
+                                   yaxis = dict(showgrid = False,showticklabels = False),
+                                   zaxis = dict(showgrid = False,showticklabels = False)
+        )
+        
+        )
 
     return fig
 

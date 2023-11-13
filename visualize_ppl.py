@@ -15,28 +15,25 @@ import matplotlib.pyplot as plt
 
 import pygem
 print(pygem.__version__)
-from pygem import FFD
-from pygem import CustomDeformation
 
-
-from path import Path
+from plyfile import PlyData
 import scipy.spatial.distance
 import plotly.graph_objects as go
 import plotly.express as px
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
-
+from pygem import FFD
 from visualize import pcshow,pc_show_multi,visualize_rotate,pcwrite
 from point_utils import *
 from bernsetin import *
 from FFD import _calculate_ffd
-
+from path import Path
 import torch
 from torch import nn
 from model import Deform_Net,PointNetCls,Contrastive_PointNet
 import re
 from emd__ import emd_module
-
+import argparse
 EMD = emd_module.emdModule()
 
 
@@ -44,22 +41,23 @@ def pointmixup(mixrates, xyz1, xyz2):
     # mix_rate = torch.tensor(mixrates).to(self.args.device).float()
     # mix_rate = mix_rate.unsqueeze_(1).unsqueeze_(2)
     # mix_rate_expand_xyz = mix_rate.expand(xyz1.shape).to(self.args.device)
+    xyz1 = torch.tensor(xyz1).unsqueeze(0)
+    xyz2 = torch.tensor(xyz2).unsqueeze(0)
+
     _, ass = EMD(xyz1, xyz2, 0.005, 300)
-    xyz2 = xyz2[ass]
+    ass = ass.cpu().numpy()
+    xyz2 = xyz2[0][ass]
     xyz = xyz1 * (1 - mixrates) + xyz2 * mixrates
 
-    return xyz
+    return xyz.cpu().numpy()
 
 
-def read_off(file):
-    off_header = file.readline().strip()
-    if 'OFF' == off_header:
-        n_verts, n_faces, __ = tuple([int(s) for s in file.readline().strip().split(' ')])
-    else:
-        n_verts, n_faces, __ = tuple([int(s) for s in off_header[3:].split(' ')])
-    verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
-    faces = [[int(s) for s in file.readline().strip().split(' ')][1:] for i_face in range(n_faces)]
-    return verts, faces
+def read_ply(f):
+    plydata = PlyData.read(f)
+    verts = np.vstack([plydata['vertex']['x'], plydata['vertex']['y'], plydata['vertex']['z']]).T
+    face = plydata['face']['vertex_index'].T
+
+    return verts, face
 
 
 def np_to_tensor(x):
@@ -78,10 +76,43 @@ def deform_point(tensor,classifier,deform_net1,deform_net2):
 
     return dp1[0],dp2[0]
 
+def FreeFormDeformation(point_set, num_points=60, points=5):
+        def random_move(ffd):
+            # randomly move the control points of  the ffd
+            ffd = ffd
+            point = np.random.randint(0, len(ffd.array_mu_x), size=[3])
+            ffd.array_mu_x[point[0], point[1], point[2]] = np.random.uniform(0.5, 1.5)
+            ffd.array_mu_y[point[0], point[1], point[2]] = np.random.uniform(0.5, 1.5)
+            ffd.array_mu_z[point[0], point[1], point[2]] = np.random.uniform(0.5, 1.5)
+            return ffd
 
+        # def random_move(ffd):
+        #         # randomly move the control points of  the ffd
+        #         ffd = ffd
+
+        #         point = np.random.randint(0, len(ffd.array_mu_x), size=[len(ffd.array_mu_x)])
+        #         ffd.array_mu_x[point] = np.random.uniform(0.5, 1.5)
+        #         ffd.array_mu_y[point] = np.random.uniform(0.5, 1.5)
+        #         ffd.array_mu_z[point] = np.random.uniform(0.5, 1.5)
+        #         return ffd
+        # initialize the 27 control points with box length of 2
+        ffd = FFD([points, points, points])
+
+        ffd.box_length = [2, 2, 2]
+        for i in range(num_points):
+            ffd = random_move(ffd)
+
+        deformed_points = ffd(np.asarray(point_set) + 1)
+
+        return deformed_points, ffd.control_points()
 
 
 if __name__ == "__main__":
+    parser  = argparse.ArgumentParser()
+
+    # parse.add_argument(
+    #     "--random"
+    # )
 
 
 
@@ -92,6 +123,8 @@ if __name__ == "__main__":
     # If it doesn't exist, create the folder
         os.mkdir(folder_name)
         print(f"Folder {folder_name} created successfully.")
+
+
 
 
     deform_net1 =  Deform_Net(in_features=128,out_features=(5+1)**3 * 3)
@@ -109,7 +142,10 @@ if __name__ == "__main__":
 
 
     
-    path = Path('/Users/wuhongyu/code/Dataset/ModelNet40')
+    path = Path('/home/wan/Datasets/ModelNet40')
+
+    data_set_path  =  '/home/wan/Datasets/ModelNet40'
+
 
     folders = [dir for dir in sorted(os.listdir(path)) if os.path.isdir(path/dir)]
     # classes
@@ -117,7 +153,8 @@ if __name__ == "__main__":
     limit_count = 0
 
     for cls in folders:
-        if '.' in cls or limit_count>30 or 'air' in cls:
+        print(cls)
+        if '.' in cls or limit_count>30:
             limit_count = 0
             continue
         # get current class folder
@@ -127,20 +164,22 @@ if __name__ == "__main__":
             os.mkdir(folder_name+'/'+cls_folder_name)
             print(f"Folder {cls_folder_name} created successfully.")
 
+        else:
+            continue
+
 
         # get all the files in the folder
         file_list = os.listdir(path/cls/'train')
 
         for file in file_list:
-            with open(path/cls/'train'/file, 'r') as f:
-                data  = read_off(f)
+            with open(os.path.join(data_set_path+'/'+cls+'/train',file),'rb') as f:
+            # with open(path/cls/'train'/file, 'rb') as f:
+                data  = read_ply(f)
                 verts, faces  = data 
 
-            i,j,k = np.array(faces).T
-            x,y,z = np.array(verts).T
-            coords = np.column_stack((x,y,z))
+
             # get the berstin parameter, control points
-            b,p,xyz= _calculate_ffd(np.array(verts),faces,n=5)
+            b,p,xyz= _calculate_ffd(np.array(verts),faces,n=5,n_samples=3072)
             
             # get origin 3d img
             origin = np.matmul(b,p)
@@ -164,7 +203,7 @@ if __name__ == "__main__":
             # B = new1.shape[0]
             mixrates = 0.5
             new3 = pointmixup(mixrates=mixrates,xyz1=new1,xyz2=new2)
-            new3 = Normalize()(new3)
+            new3 = Normalize()(new3[0])
 
 
             file_name = file.split('.')[0]

@@ -4,6 +4,7 @@ from utils import mesh3d
 
 
 def bernstein_poly(n, v, stu):
+    #bernsein polynomial
     coeff = comb(n, v)
     weights = coeff * ((1 - stu) ** (n - v)) * (stu ** v)
     return weights

@@ -24,6 +24,7 @@ def xyz_to_stu(xyz, origin, stu_axes):
     # s, t, u = np.diag(stu_axes)
     assert(stu_axes.shape == (3, 3))
     s, t, u = stu_axes
+    # Normal Vectors
     tu = np.cross(t, u)
     su = np.cross(s, u)
     st = np.cross(s, t)
@@ -47,34 +48,6 @@ def xyz_to_stu(xyz, origin, stu_axes):
     return stu
 
 
-def xyz_to_stu(xyz, origin, stu_axes):
-    if stu_axes.shape == (3,):
-        stu_axes = np.diag(stu_axes)
-        # raise ValueError(
-        #     'stu_axes should have shape (3,), got %s' % str(stu_axes.shape))
-    # s, t, u = np.diag(stu_axes)
-    assert(stu_axes.shape == (3, 3))
-    s, t, u = stu_axes
-
-    tu = np.cross(t, u)
-    su = np.cross(s, u)
-    st = np.cross(s, t)
-
-    diff = xyz - origin
-
-    # TODO: vectorize? np.dot(diff, [tu, su, st]) / ...
-
-    try:
-        stu = np.stack([
-            np.dot(diff, tu) / np.dot(s, tu),
-            np.dot(diff, su) / np.dot(t, su),
-            np.dot(diff, st) / np.dot(u, st)
-        ], axis=-1)
-    except RuntimeWarning:
-        print('okk')
-
-
-    return stu
 
 
 def stu_to_xyz(stu_points, stu_origin, stu_axes):
@@ -91,6 +64,7 @@ def get_stu_control_points(dims):
 
 
 def get_control_points(dims, stu_origin, stu_axes):
+    # get the contorol point in lattice space and convert it into origin coordinates
     stu_points = get_stu_control_points(dims)
     xyz_points = stu_to_xyz(stu_points, stu_origin, stu_axes)
     return xyz_points
@@ -126,15 +100,16 @@ def get_ffd(xyz, dims, stu_origin=None, stu_axes=None):
     p = get_control_points(dims, stu_origin, stu_axes)
     return b, p, xyz
 
-
-def deform_mesh(xyz, lattice):
-    return trivariate_bernstein(lattice, xyz)
+#
+# def deform_mesh(xyz, lattice):
+#     return trivariate_bernstein(lattice, xyz)
 
 
 def get_stu_params(xyz):
+    #setting up the necessary parameters to define a control lattice for Free-Form Deformation
     minimum, maximum = utils.extent(xyz, axis=0)
     stu_origin = minimum
-    # stu_axes = np.diag(maximum - minimum)
+    stu_axes = np.diag(maximum - minimum)
     stu_axes = maximum - minimum
     return stu_origin, stu_axes
 
@@ -150,7 +125,9 @@ def _calculate_ffd(vertices, faces, n=3, n_samples=None):
         stu_origin, stu_axes = get_stu_params(norm_pointcloud)
 
     else:
-        pointcloud = PointSampler()((vertices, faces))
+        points = PointSampler(n_samples)((vertices, faces))
+        norm_pointcloud = Normalize()(points)
+        # initilize the stu
+        stu_origin, stu_axes = get_stu_params(norm_pointcloud)
     dims = (n,) * 3
-    # return ffd.get_ffd(points, dims)
     return get_ffd(norm_pointcloud, dims,stu_origin=stu_origin,stu_axes=stu_axes)

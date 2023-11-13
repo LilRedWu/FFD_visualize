@@ -116,7 +116,9 @@ def _calculate_ffd(vertices, faces, n=3, n_samples=None):
         stu_origin, stu_axes = get_stu_params(norm_pointcloud)
 
     else:
-        pointcloud = PointSampler()((vertices, faces))
+        points = PointSampler(n_samples)((vertices, faces))
+        norm_pointcloud = Normalize()(points)
+        stu_origin, stu_axes = get_stu_params(norm_pointcloud)
     dims = (n,) * 3
     # return ffd.get_ffd(points, dims)
     return get_ffd(norm_pointcloud, dims,stu_origin=stu_origin,stu_axes=stu_axes)
