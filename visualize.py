@@ -27,6 +27,16 @@ import kaleido
 
 
 
+def read_off(file):
+    off_header = file.readline().strip()
+    if 'OFF' == off_header:
+        n_verts, n_faces, __ = tuple([int(s) for s in file.readline().strip().split(' ')])
+    else:
+        n_verts, n_faces, __ = tuple([int(s) for s in off_header[3:].split(' ')])
+    verts = [[float(s) for s in file.readline().strip().split(' ')] for i_vert in range(n_verts)]
+    faces = [[int(s) for s in file.readline().strip().split(' ')][1:] for i_face in range(n_faces)]
+    return verts, faces
+
 def pcshow(xs,ys,zs):
     data=[go.Scatter3d(x=xs, y=ys, z=zs,
                                    mode='markers',marker=dict(size=8))]

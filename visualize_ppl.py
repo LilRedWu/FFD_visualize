@@ -26,11 +26,10 @@ from pygem import FFD
 from visualize import pcshow,pc_show_multi,visualize_rotate,pcwrite
 from point_utils import *
 from bernsetin import *
-from FFD import _calculate_ffd
 from path import Path
 import torch
 from torch import nn
-from model import Deform_Net,PointNetCls,Contrastive_PointNet
+from model.model import Deform_Net,PointNetCls,Contrastive_PointNet
 import re
 from emd__ import emd_module
 import argparse
@@ -200,7 +199,6 @@ if __name__ == "__main__":
 
             # 这个地方放pointmixup
 
-            # B = new1.shape[0]
             mixrates = 0.5
             new3 = pointmixup(mixrates=mixrates,xyz1=new1,xyz2=new2)
             new3 = Normalize()(new3[0])

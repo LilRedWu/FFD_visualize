@@ -36,8 +36,8 @@ def xyz_to_stu(xyz, origin, stu_axes):
     print("*****************")
 
     tu_divide = handling_inf(np.dot(diff, tu),np.dot(s, tu))
-    su_divide = handling_inf(np.dot(diff, su),np.dot(s, su))
-    st_divide = handling_inf(np.dot(diff, st),np.dot(s, st))
+    su_divide = handling_inf(np.dot(diff, su),np.dot(t, su))
+    st_divide = handling_inf(np.dot(diff, st),np.dot(u, st))
 
     stu = np.stack([
         tu_divide,
@@ -114,20 +114,12 @@ def get_stu_params(xyz):
     return stu_origin, stu_axes
 
 
-def _calculate_ffd(vertices, faces, n=3, n_samples=None):
+def calculate_ffd(points, n=3):
     # import template_FFD.deform as ffd
     # import util3d.mesh.sample as sample
     # stu_origin, stu_axes = ffd.get_stu_params(vertices)
 
-    if n_samples is None:
-        points =  PointSampler(3000)((vertices, faces))
-        norm_pointcloud = Normalize()(points)
-        stu_origin, stu_axes = get_stu_params(norm_pointcloud)
-
-    else:
-        points = PointSampler(n_samples)((vertices, faces))
-        norm_pointcloud = Normalize()(points)
-        # initilize the stu
-        stu_origin, stu_axes = get_stu_params(norm_pointcloud)
+    norm_pointcloud = Normalize()(points)
+    stu_origin, stu_axes = get_stu_params(norm_pointcloud)
     dims = (n,) * 3
     return get_ffd(norm_pointcloud, dims,stu_origin=stu_origin,stu_axes=stu_axes)
